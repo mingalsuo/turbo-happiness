@@ -3,9 +3,9 @@
  *  
  *  Mostly just a prototype at this stage and code reflects that.
  *  
- *  Functionality :         does what it needs
+ *  Functionality :         does less than what it should
  *  Implementation :        leaves things to be desired
- *  Comments :              none
+ *  Comments :              not really that useful
  *  Usefulness to others :  limited
  *  Code quality :          crap
  *  Quality as example :    frightening
@@ -20,46 +20,52 @@
 #include <Arduino.h>
 #include <Servo.h>
 
-Servo myservo;
-int setValue = 0;
-int outflow_raw[10];
-int inflow_raw[10];
-int guess[] = {0, 24, 36, 43, 48, 51, 54, 56, 57, 59, 60};
-
+/* Function prototypes to make the compiler happy */
 void getTemps(int n);
 int calcBestGuess(int x);
 void moveServo();
 int inflow();
 int outflow();
 
+
+/* Oh dear god, global variables!
+ * What is this? Some kind of crippled environment without a heap and limited stack? Oh, right... */
+Servo myservo;
+int setValue = 0;
+int outflow_raw[10];
+int inflow_raw[10];
+int guess[] = {0, 24, 36, 43, 48, 51, 54, 56, 57, 59, 60};
+
+
+/* Some basic setup that needs to be done for life not to suck */
 void setup() {
+  // Delay a while to give the BT module a chance to init 
+  // then setup the serial to 115200 so we have some common ground
+  // and just shove some data up in there so it knows we are alive
   delay(1000);
   Serial.begin(115200);
-  Serial.println("Booting");
-  for (int i = 0; i < 500; i++)
-    Serial.print(".");
-  Serial.println(" OK");
-  Serial.print("Setting up IO");  
+  delay(250);
+  Serial.println("Booting monitor-control");
+
+  // Setup the IOs we will use
   pinMode(12, OUTPUT);
   myservo.attach(9);
-  Serial.println("... OK");
 
-  Serial.print("Loading initial data");
+  // This is fugly, why is it even here? Please clean it up before my eyes melt
   for (int i = 0; i < 10; i++)
   {
     getTemps(i);
-    Serial.print(".");
     delay(500);
   }
-  Serial.println(" OK");
-  
   int bg = calcBestGuess(outflow());
   setValue = 5*bg;
   moveServo();
 }
 
+/* What should our main loop do? Well, probably empty spin waiting for something to do */
 void loop()
 {
+  // probably not this
   delay(10000);
   for (int i = 0; i < 10; i++)
   {
@@ -74,6 +80,7 @@ void loop()
   Serial.println(setValue);
 }
 
+/* This was a really clever piece of code that does something */
 int calcBestGuess(int x)
 {
   int i = 0;
@@ -91,6 +98,7 @@ int calcBestGuess(int x)
   return i;
 }
 
+/* Oh this is all wrong */
 int inflow()
 {
   int x = 0;
@@ -98,6 +106,7 @@ int inflow()
     x += inflow_raw[i];
   return x / 10;
 }
+/* even worse */
 int outflow()
 {
   int x = 0;
@@ -105,27 +114,28 @@ int outflow()
     x += outflow_raw[i];
   return x / 10;
 }
-
+/* Why was this a good idea again? */
 void getTemps(int n)
 {
   outflow_raw[n] = map(analogRead(0), 0, 1023, 0, 500);
   inflow_raw[n]  = map(analogRead(1), 0, 1023, 0, 500);
 }
 
+/* A mostly pointless method */
 void upBy(int n)
 {
   setValue += n;
   setValue = constrain(setValue, 0, 100);
   moveServo();
 }
-
+/* About as pointles as the one above */
 void downBy(int n)
 {
   setValue -= n;
   setValue = constrain(setValue, 0, 100);
   moveServo();
 }
-
+/* Finally something that does something, if only the cable was connected */
 void moveServo()
 {
   setValue = constrain(setValue, 0, 100);
